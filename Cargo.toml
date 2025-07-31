@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = ["libs/common"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Stephane SEGNING LAMBOU <stephane@ssegning.com>"]
+license = "MIT"
+repository = "https://github.com/stephane-segning/joy-kunga.stream"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"] }
+
+# Cache
+redis = { version = "0.26", features = ["tokio-comp"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# UUID
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Configuration
+config = "0.14"
+
+# Testing
+tokio-test = "0.4"
