@@ -1,0 +1,199 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Project Infrastructure and Database Schema",
+        "description": "Initialize the foundational infrastructure including PostgreSQL database schema, Redis setup, and core project structure for the Rust backend services.",
+        "details": "Create PostgreSQL 17+ database with tables for User {id, email, provider, roles, settings}, MediaItem {id, type, metadata, s3Key, status}, and Session {token, userId, expiresAt}. Set up Redis 6+ for caching and session storage. Initialize Rust workspace with Tokio async runtime (Rust edition 2024). Configure database migrations using sqlx or diesel. Set up connection pooling and basic error handling.",
+        "testStrategy": "Unit tests for database connection, schema validation, and basic CRUD operations. Integration tests for Redis connectivity and session storage.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Rust Workspace and Project Structure",
+            "description": "Set up the core Rust monorepo workspace using Cargo, configured with the Tokio async runtime and Rust 2024 edition.",
+            "dependencies": [],
+            "details": "Create a new Cargo workspace. Configure the root `Cargo.toml` to specify the 2024 edition. Add `tokio` as a core dependency with 'full' features. Establish a basic directory structure for future microservices (e.g., `services/`, `libs/`).",
+            "status": "pending",
+            "testStrategy": "Verify the project compiles successfully using `cargo check` and `cargo build`."
+          },
+          {
+            "id": 2,
+            "title": "Provision PostgreSQL and Define Schema with Migrations",
+            "description": "Set up a PostgreSQL 17+ instance and use `sqlx-cli` to define and apply the initial database schema for User, MediaItem, and Session tables.",
+            "dependencies": [],
+            "details": "Provision a PostgreSQL 17+ server (e.g., using Docker). Install `sqlx-cli`. Initialize migrations and create the first migration file defining the `User` {id, email, provider, roles, settings}, `MediaItem` {id, type, metadata, s3Key, status}, and `Session` {token, userId, expiresAt} tables with appropriate data types (e.g., UUID, TEXT, JSONB, TIMESTAMPTZ).",
+            "status": "pending",
+            "testStrategy": "Apply the migration using `sqlx migrate run`. Manually verify the table structures and constraints using a SQL client."
+          },
+          {
+            "id": 3,
+            "title": "Implement PostgreSQL Connection Pooling in Rust",
+            "description": "Integrate the `sqlx` crate into the Rust project to establish a connection pool to the PostgreSQL database and implement basic data access logic.",
+            "dependencies": [
+              "1.1",
+              "1.2"
+            ],
+            "details": "Add `sqlx` with `postgres` and `runtime-tokio-rustls` features to project dependencies. Create a database module to manage the `PgPool` instance, configured via environment variables. Implement a basic health check function to verify database connectivity. Define custom error types for database operations.",
+            "status": "pending",
+            "testStrategy": "Write a unit test that successfully acquires a connection from the pool and performs a simple query (e.g., `SELECT 1`). Test connection failure scenarios."
+          },
+          {
+            "id": 4,
+            "title": "Provision Redis and Implement Rust Client",
+            "description": "Set up a Redis 6+ instance and integrate a Redis client into the Rust application for future caching and session storage.",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Provision a Redis 6+ server (e.g., using Docker). Add the `redis` crate with the `tokio-comp` feature to the project. Create a cache module to manage the Redis connection, configured via environment variables. Implement basic `get` and `set` wrapper functions.",
+            "status": "pending",
+            "testStrategy": "Write an integration test to connect to Redis, set a key-value pair with a TTL, retrieve it, and verify it is deleted after the TTL expires."
+          },
+          {
+            "id": 5,
+            "title": "Create Initial Infrastructure Integration Tests",
+            "description": "Develop a suite of integration tests to validate that the Rust application can connect to both PostgreSQL and Redis, and that the database schema is correctly set up.",
+            "dependencies": [
+              "1.3",
+              "1.4"
+            ],
+            "details": "Create an integration test that initializes both the PostgreSQL connection pool and the Redis client. The test should perform a simple write/read operation against a test table in the database. It should also perform a SET/GET operation in Redis to confirm both services are reachable and operational from the application.",
+            "status": "pending",
+            "testStrategy": "Run the integration test suite using `cargo test`. Success is defined by all tests passing, confirming the foundational infrastructure is correctly configured and accessible."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement Authentication Service with OAuth2 and JWT",
+        "description": "Build the authentication microservice supporting OAuth2 providers (Google, Apple) and basic auth with JWT token management.",
+        "details": "Implement Rust-based auth service using oauth2 crate for Google/Apple integration and basic username/password auth. Generate and validate JWTs using jsonwebtoken crate. Store sessions in Redis with expiration. Create RESTful endpoints: POST /auth/login, POST /auth/oauth/callback, POST /auth/refresh, DELETE /auth/logout. Implement RBAC with user roles stored in PostgreSQL.",
+        "testStrategy": "Unit tests for JWT generation/validation, OAuth2 flow simulation, and session management. Integration tests with mock OAuth providers and Redis session storage.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Develop S3 Integration and Media Ingestion Service",
+        "description": "Create the media ingestion service that scans S3 buckets, extracts metadata using FFprobe, and stores information in PostgreSQL.",
+        "details": "Build Rust service using aws-sdk-s3 for S3 operations and ffmpeg-next crate for metadata extraction. Implement periodic scanning of S3 buckets/folders, extract metadata (duration, resolution, codec, etc.) using ffprobe, generate thumbnails and store in separate S3 bucket. Update PostgreSQL with media metadata and create search indices. Handle various media formats (movies, shows, music, photos).",
+        "testStrategy": "Unit tests for S3 operations, metadata extraction, and database updates. Integration tests with mock S3 buckets and sample media files.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Build Core REST API Endpoints",
+        "description": "Implement RESTful API endpoints for media CRUD operations, user management, and session handling with proper authentication middleware.",
+        "details": "Create Rust web server using axum or warp framework. Implement endpoints: GET/POST /users, GET /media (with filtering/search), GET /media/:id, POST /media/refresh, GET/DELETE /sessions. Add JWT authentication middleware for protected routes. Implement pagination, sorting, and filtering for media queries. Add request/response validation using serde and proper error handling with structured JSON responses.",
+        "testStrategy": "Unit tests for each endpoint with mock authentication. Integration tests for full request/response cycles. API contract testing with OpenAPI specification.",
+        "priority": "high",
+        "dependencies": [
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Initialize React Native Expo Client Application",
+        "description": "Set up the React Native Expo monorepo targeting web, iOS/Android, and TV platforms with basic authentication flow and navigation.",
+        "details": "Initialize Expo SDK (latest stable) with React 18 support. Configure monorepo structure for web, mobile, and TV targets. Implement authentication screens (login, OAuth callback handling) using expo-auth-session. Set up navigation using @react-navigation/native with stack and tab navigators. Create basic UI components with dark theme only. Configure platform-specific adaptations for touch and remote control inputs.",
+        "testStrategy": "Unit tests for authentication flow components. E2E tests using Detox for mobile platforms. Manual testing on web, iOS simulator, and Android emulator.",
+        "priority": "medium",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement Redis Caching Layer for Performance",
+        "description": "Integrate Redis caching for metadata queries, session management, and frequently accessed data to improve response times.",
+        "details": "Implement Redis integration using redis-rs crate in Rust backend. Cache frequently accessed metadata queries with appropriate TTL values. Implement cache-aside pattern for media metadata, user sessions, and search results. Add cache invalidation strategies for media updates. Create Redis connection pooling and error handling for cache misses.",
+        "testStrategy": "Unit tests for cache operations (get, set, delete, TTL). Performance tests comparing cached vs non-cached response times. Integration tests for cache invalidation scenarios.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Build Media Library UI and Basic Playback",
+        "description": "Create the media library interface with browsing, searching, and basic HLS playback functionality in the React Native Expo client.",
+        "details": "Implement media library screens with grid/list views for movies, shows, music, and photos. Add search and filtering capabilities by genre, title, and watch status. Integrate with backend API for media data fetching. Implement HLS video playback using expo-av with adaptive streaming. Add basic media controls (play, pause, seek, volume). Create responsive layouts for different screen sizes and orientations.",
+        "testStrategy": "Unit tests for media library components and search functionality. Integration tests for API data fetching. Manual testing of playback across different devices and network conditions.",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Develop FFmpeg Transcoding Service",
+        "description": "Build the on-the-fly transcoding service using FFmpeg with hardware acceleration support for adaptive streaming.",
+        "details": "Create Rust microservice using ffmpeg-next crate for transcoding operations. Implement client capability detection and adaptive bitrate streaming (HLS/DASH). Add hardware acceleration support (NVENC, QuickSync, VAAPI) when available. Create transcoding job queue with Redis for managing concurrent operations. Generate HLS segments and playlists dynamically. Implement pre-signed URL generation for S3 direct streaming when transcoding isn't needed.",
+        "testStrategy": "Unit tests for transcoding logic and job queue management. Performance tests for transcoding speed and quality. Integration tests with various media formats and client capabilities.",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Add WebSocket Support for Real-time Updates",
+        "description": "Implement WebSocket connections for real-time library updates, transcoding progress, and live notifications.",
+        "details": "Add WebSocket support to Rust backend using tokio-tungstenite. Implement real-time notifications for library changes, transcoding progress, and user activities. Create WebSocket authentication using JWT tokens. Add connection management with automatic reconnection in the client. Implement message queuing and delivery guarantees for critical updates.",
+        "testStrategy": "Unit tests for WebSocket message handling and authentication. Integration tests for real-time update delivery. Load testing for concurrent WebSocket connections.",
+        "priority": "low",
+        "dependencies": [
+          4,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement Offline Download and Advanced UI Features",
+        "description": "Add offline download capabilities, advanced search, accessibility features, and UI refinements including themes and responsive design.",
+        "details": "Implement offline download manager in React Native using expo-file-system for local storage. Add download progress tracking and queue management. Enhance search with advanced filters, sorting options, and search history. Implement accessibility features including screen reader support, keyboard navigation, and caption support. Add responsive design optimizations for TV remote control navigation and touch interfaces.",
+        "testStrategy": "Unit tests for download manager and search functionality. Accessibility testing with screen readers. Manual testing on TV platforms and various device sizes.",
+        "priority": "low",
+        "dependencies": [
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-31T14:03:14.798Z",
+      "updated": "2025-07-31T14:03:14.798Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

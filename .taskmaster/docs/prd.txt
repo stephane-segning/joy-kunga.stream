@@ -1,0 +1,135 @@
+<context>
+# Overview  
+This project aims to build a high-performance, cross-platform media server and client suite to replace Jellyfin, leveraging Rust for backend speed and safety, React Native Expo for unified web, mobile, and TV experiences, and scalable cloud services (S3, PostgreSQL, Redis). It solves the pain points of resource-intensive transcodes, fragmented client ecosystems, and maintainability concerns, targeting home media enthusiasts, small teams, and open‑source developers who value performance, reliability, and extensibility.
+
+# Core Features
+
+* **Media Library Management**
+
+  * *What it does:* Organizes and indexes media files (movies, shows, music, photos) stored in S3.
+  * *Why it’s important:* Provides users a single source of truth for all their content, with fast search and filtering.
+  * *How it works:* Rust service scans S3 buckets or local folders periodically, extracts metadata (ffprobe), stores in PostgreSQL, store thumbnails in another S3 bucket, and updates indices in PostgreSQL again. Redis would be used for realtime websocket where needed. So it's not a first class priority.
+
+* **Streaming & Transcoding**
+
+  * *What it does:* Streams media in user‑appropriate formats, optionally transcoding on‑the‑fly using hardware acceleration.
+  * *Why it’s important:* Ensures smooth playback across devices and networks without manual file conversions.
+  * *How it works:* Rust backend interfaces with FFmpeg via a Rust crate, detects client capabilities, and either serves direct HLS/DASH segments or spawns lightweight transcode jobs.
+
+* **Authentication & Authorization**
+
+  * *What it does:* Manages user login (OAuth2 for Google/Apple/others, with optional legacy basic auth).
+  * *Why it’s important:* Secures personal media libraries; supports single‑sign‑on.
+  * *How it works:* Rust OAuth2 crate issues JWTs, with tokens stored in Redis for session management and RBAC.
+
+* **Client Applications (Web, Mobile, TV)**
+
+  * *What it does:* Offers tailored UX across browsers, iOS/Android, and TV platforms (Apple TV, Android TV).
+  * *Why it’s important:* Provides consistent feature set and UI adaptability, reducing fragmentation.
+  * *How it works:* Shared codebase in React Native Expo, with platform‑specific modules (e.g., remote control handlers).
+
+* **Caching & Performance**
+
+  * *What it does:* Caches metadata and frequently accessed streams for low latency.
+  * *Why it’s important:* Minimizes re‑computation and reduces backend load.
+  * *How it works:* Redis layer caches metadata queries; signed URLs for S3 direct serving when possible.
+
+# User Experience
+
+* **User Personas**
+
+  * *Home Theater Enthusiast:* Wants seamless playback on TV with remote control.
+  * *Mobile Commuter:* Consumes media offline on the go.
+  * *Power User/Developer:* Customizes and extends the platform, uses API integrations.
+
+* **Key User Flows**
+
+  1. **Onboarding & Login:** Choose OAuth provider or basic auth, create profile.
+  2. **Library Browsing:** Navigate by genre, search by title, filter by unwatched.
+  3. **Playback:** Select media, choose quality, cast to TV or download offline.
+  4. **Library Management:** Add/remove media buckets, refresh metadata.
+  5. **Settings & Sharing:** Invite family members, manage permissions.
+
+* **UI/UX Considerations**
+
+  * Responsive design with adaptive layouts for touch and remote control.
+  * Dark theme only, accessibility features (captions, screen‑reader support).
+  * Offline mode indicators and progress bars for downloads.
+
+</context>
+
+<PRD>
+# Technical Architecture  
+- **System Components:**  
+  - *API Gateway & Auth Service:* Rust-based JWT/OAuth2 endpoints.  
+  - *Media Service:* Rust microservice for ingestion, transcoding (FFmpeg).  
+  - *Client App:* React Native Expo monorepo targeting web, iOS/Android, tvOS/Android TV.  
+- **Data Models:**  
+  - *User:* {id, email, provider, roles, settings}  
+  - *MediaItem:* {id, type, metadata, s3Key, status}  
+  - *Session:* {token, userId, expiresAt}  
+- **APIs & Integrations:**  
+  - RESTful endpoints for CRUD (users, media, sessions).  
+  - WebSocket for real-time updates (e.g., library changes).  
+  - S3 pre-signed URLs for direct streaming/download.  
+- **Infrastructure Requirements:**  
+  - AWS: S3 for storage, EKS for container orchestration.  
+  - Postgres for metadata, Redis for caching and session store.  
+  - CDN (e.g., CloudFront) in front of S3 for low-latency delivery.
+
+# Development Roadmap
+
+* **Phase 1: MVP**
+
+  * Authentication (OAuth2 + basic)
+  * Media ingestion service writing metadata to Postgres
+  * Basic React Native Expo app: auth flow, library list, playback via HLS
+  * S3 integration with pre-signed URLs, Redis caching for metadata
+
+* **Phase 2: Core Enhancements**
+
+  * On-the-fly transcoding service integration
+  * Offline download support and cache management in client
+  * UI refinements: themes, accessibility, search
+
+* **Phase 3: Advanced Features**
+
+  * Multi-user sharing & permissions, playlists
+  * Recommendation engine (basic collaborative filtering)
+  * WebSocket-based live updates and notifications
+
+* **Phase 4: Future Extensions**
+
+  * Plugin architecture for metadata providers
+  * Analytics dashboard for usage metrics
+  * Native modules for Smart TV platforms beyond Expo
+
+# Logical Dependency Chain
+
+1. **Foundation:** Auth service & database schema
+2. **Storage Integration:** S3 connector & metadata ingestion
+3. **Basic API + Client:** Expose media list, playback endpoints; basic Expo UI
+4. **Caching Layer:** Redis integration for performance
+5. **Transcoding Pipeline:** FFmpeg wrapper service
+6. **Offline & Advanced UI:** Download manager, search, themes
+7. **Real-time & Sharing:** WebSockets, permissions, recommendations
+
+# Risks and Mitigations
+
+* **Transcoding Complexity:** FFmpeg in Rust can be challenging—build a prototype early; consider microservice isolation.
+* **Cross-Platform UI Divergence:** Expo limitations on TV—evaluate native extensions or eject if needed.
+* **Scalability & Costs:** S3 egress and compute costs—use CDN caching, auto-scaling.
+* **Resource Constraints:** Small team—prioritize MVP features strictly; adopt incremental delivery.
+
+# Appendix
+
+* **Research Findings:**
+
+  * Rust performance benchmarks vs .NET on media throughput.
+  * S3 streaming best practices (range requests, cache-control).
+* **Technical Specifications:**
+
+  * Minimum Rust edition: 2024, async Tokio runtime.
+  * Expo SDK version: latest stable with React 18.
+  * PostgreSQL 17+, Redis 6+, AWS EKS Kubernetes 1.32.
+</PRD>

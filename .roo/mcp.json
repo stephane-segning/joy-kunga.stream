@@ -2,11 +2,15 @@
 	"mcpServers": {
 		"task-master-ai": {
 			"command": "npx",
-			"args": ["-y", "--package=task-master-ai", "task-master-ai"],
+			"args": [
+				"-y",
+				"--package=task-master-ai",
+				"task-master-ai"
+			],
 			"env": {
 				"ANTHROPIC_API_KEY": "YOUR_ANTHROPIC_API_KEY_HERE",
 				"PERPLEXITY_API_KEY": "YOUR_PERPLEXITY_API_KEY_HERE",
-				"OPENAI_API_KEY": "YOUR_OPENAI_KEY_HERE",
+				"OPENAI_API_KEY": "sk-3ab1d192e14e47dc98c32b04e492b258",
 				"GOOGLE_API_KEY": "YOUR_GOOGLE_KEY_HERE",
 				"XAI_API_KEY": "YOUR_XAI_KEY_HERE",
 				"OPENROUTER_API_KEY": "YOUR_OPENROUTER_KEY_HERE",
