@@ -18,6 +18,7 @@ thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 config.workspace = true
+common = { path = "../../libs/common" }
 
 # Web framework
 axum = "0.7"

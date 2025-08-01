@@ -38,6 +38,7 @@ impl RedisConfig {
 }
 
 /// Redis connection pool
+#[derive(Clone)]
 pub struct RedisPool {
     client: Client,
 }
