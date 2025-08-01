@@ -7,3 +7,4 @@
 5. If I say "go working", get the next task and start working on it.
 6. If you're done with one (sub)task, then terminate.
 7. Always use conventional commit when doing commit. Only add a longer body if the case looks interesting. You judge.
+8. If a task you want to work on has no subtasks, create subtasks first using taskmaster ai.
