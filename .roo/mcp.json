@@ -20,7 +20,8 @@
       },
       "alwaysAllow": [
         "next_task",
-        "set_task_status"
+        "set_task_status",
+        "get_tasks"
       ]
     }
   }
