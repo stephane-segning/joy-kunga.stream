@@ -9,7 +9,7 @@
         "testStrategy": "Unit tests for database connection, schema validation, and basic CRUD operations. Integration tests for Redis connectivity and session storage.",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -61,7 +61,7 @@
               "1.4"
             ],
             "details": "Create an integration test that initializes both the PostgreSQL connection pool and the Redis client. The test should perform a simple write/read operation against a test table in the database. It should also perform a SET/GET operation in Redis to confirm both services are reachable and operational from the application.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run the integration test suite using `cargo test`. Success is defined by all tests passing, confirming the foundational infrastructure is correctly configured and accessible."
           }
         ]
@@ -77,7 +77,64 @@
           1
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Rust authentication service foundation with database models",
+            "description": "Create the basic Rust project structure for the authentication service and implement PostgreSQL database models for users, roles, and sessions with RBAC support.",
+            "dependencies": [],
+            "details": "Initialize new Rust project with Cargo.toml dependencies (tokio, axum, sqlx, serde). Create database schema with users table (id, username, email, password_hash, created_at), roles table (id, name, permissions), user_roles junction table, and sessions table (id, user_id, token_hash, expires_at). Implement SQLx models and database connection setup with connection pooling. Set up database migrations using sqlx-cli.",
+            "status": "done",
+            "testStrategy": "Unit tests for database model creation, connection establishment, and basic CRUD operations on user and role entities."
+          },
+          {
+            "id": 2,
+            "title": "Implement JWT token generation and validation system",
+            "description": "Build the JWT token management system using jsonwebtoken crate for creating, validating, and refreshing access and refresh tokens.",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Implement JWT service using jsonwebtoken crate with RS256 algorithm. Create functions for generating access tokens (15min expiry) and refresh tokens (7 days expiry). Include user ID, roles, and permissions in JWT claims. Implement token validation middleware for protected routes. Add token blacklisting mechanism using Redis for logout functionality. Create refresh token rotation for enhanced security.",
+            "status": "pending",
+            "testStrategy": "Unit tests for token generation with various payloads, token validation with expired/invalid tokens, and refresh token rotation scenarios."
+          },
+          {
+            "id": 3,
+            "title": "Implement basic username/password authentication endpoints",
+            "description": "Create RESTful endpoints for user registration, login, and logout with password hashing and session management.",
+            "dependencies": [
+              "2.1",
+              "2.2"
+            ],
+            "details": "Implement POST /auth/register endpoint with password hashing using argon2. Create POST /auth/login endpoint that validates credentials, generates JWT tokens, and stores session in Redis. Implement DELETE /auth/logout endpoint that invalidates tokens and removes Redis session. Add input validation using serde and custom validators. Implement rate limiting for login attempts to prevent brute force attacks.",
+            "status": "pending",
+            "testStrategy": "Integration tests for registration with various input scenarios, login with valid/invalid credentials, and logout token invalidation. Load testing for rate limiting effectiveness."
+          },
+          {
+            "id": 4,
+            "title": "Integrate OAuth2 providers (Google and Apple) with callback handling",
+            "description": "Implement OAuth2 authentication flow using oauth2 crate for Google and Apple sign-in with proper callback handling and user account linking.",
+            "dependencies": [
+              "2.1",
+              "2.2"
+            ],
+            "details": "Set up OAuth2 clients for Google and Apple using oauth2 crate. Implement authorization URL generation with proper scopes and PKCE for security. Create POST /auth/oauth/callback endpoint to handle authorization codes, exchange for access tokens, and retrieve user profile information. Implement user account creation or linking logic for OAuth users. Store OAuth provider information in user profiles and handle email verification status from providers.",
+            "status": "pending",
+            "testStrategy": "Integration tests with mock OAuth providers simulating successful and failed authentication flows. Unit tests for user profile creation and account linking scenarios."
+          },
+          {
+            "id": 5,
+            "title": "Implement Redis session management and token refresh endpoint",
+            "description": "Set up Redis integration for session storage with expiration and implement the token refresh endpoint for seamless authentication experience.",
+            "dependencies": [
+              "2.2",
+              "2.3"
+            ],
+            "details": "Integrate Redis using redis crate with connection pooling. Implement session storage with automatic expiration matching token lifetimes. Create POST /auth/refresh endpoint that validates refresh tokens, generates new access tokens, and updates Redis sessions. Implement session cleanup for expired tokens and user logout across multiple devices. Add Redis health checks and fallback mechanisms for service reliability.",
+            "status": "pending",
+            "testStrategy": "Unit tests for Redis session operations (create, read, update, delete) and TTL functionality. Integration tests for token refresh flow and session cleanup. Performance tests for concurrent session management."
+          }
+        ]
       },
       {
         "id": 3,
@@ -192,7 +249,7 @@
     ],
     "metadata": {
       "created": "2025-07-31T14:03:14.798Z",
-      "updated": "2025-08-01T09:18:08.838Z",
+      "updated": "2025-08-01T09:53:59.021Z",
       "description": "Tasks for master context"
     }
   }

@@ -2,9 +2,19 @@
 
 1. Before I start working, I first check with github, if I'm having the latest state.
 2. When I'm done working on something and it works (it can be before I'm done with a task), I commit the code.
-3. After marking a task or subtask as done, I push the code.
+3. After marking a task I
+    - I commit the code if it's a subtask
+    - I commit & push the code if it's a task
 4. If I consider the (sub)task is done, I open a PR if I was working on a different branch.
-5. If I say "go working", get the next task and start working on it.
+5. If I say "go working", get the next task:
+    - mark it as in-progress
+    - and start working on it
 6. If you're done with one (sub)task, then terminate.
 7. Always use conventional commit when doing commit. Only add a longer body if the case looks interesting. You judge.
 8. If a task you want to work on has no subtasks, create subtasks first using taskmaster ai.
+9. if you create substacks, create them on github too via the tool following this pattern:
+    - the task is the user story, is prefixed with `[US]` and is labelled as user-story
+    - the sub task is the ticket and is labelled as ticket
+10. In rust, I prefer the builder pattern.
+11. I prefer rust tests in a separate folder close to src, called `tests`.
+12. Sometimes, you'll want to use pwd to know where you are, relatively to the root of the project.
