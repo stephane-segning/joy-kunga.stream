@@ -49,7 +49,7 @@
               "1.1"
             ],
             "details": "Provision a Redis 6+ server (e.g., using Docker). Add the `redis` crate with the `tokio-comp` feature to the project. Create a cache module to manage the Redis connection, configured via environment variables. Implement basic `get` and `set` wrapper functions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write an integration test to connect to Redis, set a key-value pair with a TTL, retrieve it, and verify it is deleted after the TTL expires."
           },
           {
@@ -192,7 +192,7 @@
     ],
     "metadata": {
       "created": "2025-07-31T14:03:14.798Z",
-      "updated": "2025-08-01T09:05:33.631Z",
+      "updated": "2025-08-01T09:18:08.838Z",
       "description": "Tasks for master context"
     }
   }
