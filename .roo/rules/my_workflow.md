@@ -21,3 +21,4 @@
 13. Sometimes when I do changes to the github workflow files, I wanna test the file using nektos/act.
 14. When a rust is meant to be ran inside of a server,  prefer deploying it using docker and optimize the build for prod.
 15. Somtimes I use the fetch tool to fetch links. Sometimes I use the brave tools to browse the web to check for new data about my task before I start working on it.
+16. In rust, I always keep the version in the workspace, never in a specific project.

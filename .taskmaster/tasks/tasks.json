@@ -119,7 +119,7 @@
               "2.2"
             ],
             "details": "Set up OAuth2 clients for Google and Apple using oauth2 crate. Implement authorization URL generation with proper scopes and PKCE for security. Create POST /auth/oauth/callback endpoint to handle authorization codes, exchange for access tokens, and retrieve user profile information. Implement user account creation or linking logic for OAuth users. Store OAuth provider information in user profiles and handle email verification status from providers.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Integration tests with mock OAuth providers simulating successful and failed authentication flows. Unit tests for user profile creation and account linking scenarios."
           },
           {
@@ -131,7 +131,7 @@
               "2.3"
             ],
             "details": "Integrate Redis using redis crate with connection pooling. Implement session storage with automatic expiration matching token lifetimes. Create POST /auth/refresh endpoint that validates refresh tokens, generates new access tokens, and updates Redis sessions. Implement session cleanup for expired tokens and user logout across multiple devices. Add Redis health checks and fallback mechanisms for service reliability.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for Redis session operations (create, read, update, delete) and TTL functionality. Integration tests for token refresh flow and session cleanup. Performance tests for concurrent session management."
           }
         ]
@@ -146,8 +146,63 @@
         "dependencies": [
           1
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement S3 Bucket Polling and File Discovery",
+            "description": "Create a service component to periodically scan specified S3 buckets for new or updated media files using the aws-sdk-s3 crate.",
+            "dependencies": [],
+            "details": "Develop a recurring job using a scheduler (e.g., tokio-cron-scheduler) to list objects in the target S3 bucket. The service must track processed files, possibly by checking S3 object etags or last modified dates against a database record, to avoid reprocessing existing media.",
+            "status": "done",
+            "testStrategy": "Unit test the S3 listing and file filtering logic. Integration test against a mock S3 service like LocalStack to verify the discovery of new, updated, and unchanged files."
+          },
+          {
+            "id": 2,
+            "title": "Extract Media Metadata using FFprobe",
+            "description": "For each discovered media file, integrate the ffmpeg-next crate to execute ffprobe and parse its JSON output to extract metadata.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Implement a function that takes an S3 object key, downloads the file temporarily, and runs ffprobe. Extract key metadata including duration, resolution, codecs (video/audio), container format, and bitrate. Structure the extracted data into a Rust struct. Implement error handling for corrupted or unsupported files.",
+            "status": "done",
+            "testStrategy": "Unit test the ffprobe output parser with sample JSON outputs for various media types (movies, music, photos). Integration test with a set of sample media files to ensure the end-to-end extraction process works correctly."
+          },
+          {
+            "id": 3,
+            "title": "Generate Thumbnails with FFmpeg and Upload to S3",
+            "description": "For video files, use FFmpeg to generate a thumbnail image and upload it to a separate, designated S3 bucket for thumbnails.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Use the ffmpeg-next crate to invoke an ffmpeg command that extracts a single frame from a video (e.g., at the 10% mark). After generating the thumbnail (e.g., as a JPEG), use the aws-sdk-s3 crate to upload it to the configured thumbnail bucket. The key for the thumbnail should be predictably derived from the original media's key.",
+            "status": "done",
+            "testStrategy": "Unit test the FFmpeg command generation logic. Integration test by processing a sample video file, verifying the thumbnail is created locally, and then confirming its successful upload to a mock S3 bucket."
+          },
+          {
+            "id": 4,
+            "title": "Define PostgreSQL Schema and Persist Metadata",
+            "description": "Design the PostgreSQL database schema for storing media information and implement the logic to write the extracted metadata and thumbnail URLs.",
+            "dependencies": [
+              "3.2",
+              "3.3"
+            ],
+            "details": "Using a crate like `sqlx` or `diesel`, define the database schema with tables for different media types (e.g., `media_items`). The schema should accommodate all metadata from subtask 2 and the S3 URL for the thumbnail from subtask 3. Implement transactional database writes to ensure data consistency when creating or updating a media record.",
+            "status": "done",
+            "testStrategy": "Write unit tests for the data access layer using a mocked database connection. Run integration tests against a test PostgreSQL database to verify schema migrations and the correctness of INSERT/UPDATE operations."
+          },
+          {
+            "id": 5,
+            "title": "Implement Search Indices and Finalize Ingestion Pipeline",
+            "description": "Create necessary search indices in PostgreSQL to optimize queries and wire together all components into a complete, error-handled ingestion pipeline.",
+            "dependencies": [
+              "3.4"
+            ],
+            "details": "Add PostgreSQL indices on frequently queried columns like title, media type, and genre to improve search performance for the client application. Combine the S3 polling, metadata extraction, thumbnail generation, and database persistence steps into a single, cohesive workflow. Implement robust error handling and logging for each stage of the pipeline, including a mechanism for retrying failed jobs.\n<info added on 2025-08-01T13:14:28.336Z>\nImplementation Plan for 'Implement Search Indices and Finalize Ingestion Pipeline':\n\n1. **Database Indices:**\n   - The migration '20250801131000_add_search_indices.sql' creates indices on (type, status), (user_id, status), created_at (DESC), and a GIN index on the metadata JSONB column.\n   - There is no dedicated index for 'title' or 'genre'. The migration suggests (in comments) adding a generated column for title and indexing it. For optimal search performance, consider extracting 'title' and 'genre' from metadata into dedicated columns and indexing them in a future migration.\n\n2. **Pipeline Finalization:**\n   - Ensure the S3 polling, metadata extraction, thumbnail generation, and database persistence components are fully integrated into a single workflow (see s3_poller.rs, metadata_extractor.rs, thumbnail_generator.rs, database.rs).\n   - Add robust error handling and logging at each stage. Use structured logs for traceability.\n   - Implement a retry mechanism for failed jobs (e.g., using exponential backoff or a job queue).\n   - Ensure all errors are surfaced and do not silently fail.\n\n3. **Testing:**\n   - Use EXPLAIN ANALYZE on common queries (by title, type, genre) to verify index effectiveness.\n   - Conduct an end-to-end integration test: add a file to S3, verify the pipeline creates the correct DB entry, thumbnail, and logs.\n\n4. **Next Steps:**\n   - If not already done, implement the commented-out title column/index migration.\n   - Review and refactor the pipeline orchestration code for error handling and retries.\n   - Add or update tests as described above.\n\nThis plan is based on the current codebase and migration files as of 2025-08-01.\n</info added on 2025-08-01T13:14:28.336Z>",
+            "status": "done",
+            "testStrategy": "Verify index effectiveness using `EXPLAIN ANALYZE` on common query patterns. Conduct an end-to-end integration test where a file is added to the S3 bucket and the system is verified to have created the correct database entry, thumbnail, and logs."
+          }
+        ]
       },
       {
         "id": 4,
@@ -249,7 +304,7 @@
     ],
     "metadata": {
       "created": "2025-07-31T14:03:14.798Z",
-      "updated": "2025-08-01T11:00:04.088Z",
+      "updated": "2025-08-01T13:19:33.835Z",
       "description": "Tasks for master context"
     }
   }

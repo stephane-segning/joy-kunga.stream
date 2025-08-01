@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["libs/common", "services/auth"]
+members = ["libs/common", "services/auth", "services/media"]
 
 [workspace.package]
 version = "0.1.0"
@@ -10,6 +10,14 @@ license = "MIT"
 repository = "https://github.com/stephane-segning/joy-kunga.stream"
 
 [workspace.dependencies]
+common = { path = "libs/common" }
+auth = { path = "services/auth" }
+media = { path = "services/media" }
+
+# Web framework
+axum = "0.7"
+axum-extra = { version = "0.9", features = ["typed-header"] }
+
 # Async runtime
 tokio = { version = "1.0", features = ["full"] }
 
@@ -42,7 +50,29 @@ config = "0.14"
 
 # Testing
 tokio-test = "0.4"
+serial_test = "3.1"
 
+# Password hashing
+argon2 = "0.5"
+rand = "0.8"
+regex = "1.0"
+reqwest = { version = "0.12", features = ["json"] }
+
+# JWT
+jsonwebtoken = "9"
+
+# OAuth2
+oauth2 = "4"
+
+# AWS SDK for S3
+aws-config = "1.5"
+aws-sdk-s3 = "1.36"
+
+# FFmpeg for metadata extraction
+ffmpeg-next = "7.0"
+
+# Scheduler for periodic tasks
+tokio-cron-scheduler = "0.13"
 
 [profile.prod]
 inherits = "release"

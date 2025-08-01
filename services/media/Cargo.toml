@@ -1,5 +1,5 @@
 [package]
-name = "auth"
+name = "media"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -19,12 +19,10 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 config.workspace = true
 common.workspace = true
-axum.workspace = true
-axum-extra.workspace = true
-argon2.workspace = true
-rand.workspace = true
-regex.workspace = true
-reqwest.workspace = true
-jsonwebtoken.workspace = true
-oauth2.workspace = true
+aws-config.workspace = true
+aws-sdk-s3.workspace = true
+ffmpeg-next.workspace = true
+tokio-cron-scheduler.workspace = true
+
+[dev-dependencies]
 serial_test.workspace = true
