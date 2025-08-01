@@ -1,0 +1,36 @@
+[package]
+name = "auth"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+tokio.workspace = true
+sqlx.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+config.workspace = true
+
+# Web framework
+axum = "0.7"
+axum-extra = { version = "0.9", features = ["typed-header"] }
+
+# Password hashing
+argon2 = "0.5"
+
+# JWT
+jsonwebtoken = "9.3"
+
+# OAuth2
+oauth2 = "4.4"
+
+# Testing
+serial_test = "3.1"
