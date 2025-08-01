@@ -6,3 +6,4 @@
 4. If I consider the (sub)task is done, I open a PR if I was working on a different branch.
 5. If I say "go working", get the next task and start working on it.
 6. If you're done with one (sub)task, then terminate.
+7. Always use conventional commit when doing commit. Only add a longer body if the case looks interesting. You judge.
