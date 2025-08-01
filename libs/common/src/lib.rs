@@ -4,6 +4,7 @@
 //! in the Joy Kunga application, including database connectivity, error
 //! handling, and other common utilities.
 
+pub mod cache;
 pub mod database;
 pub mod error;
 
