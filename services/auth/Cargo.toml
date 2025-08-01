@@ -26,6 +26,8 @@ axum-extra = { version = "0.9", features = ["typed-header"] }
 
 # Password hashing
 argon2 = "0.5"
+rand = "0.8"
+regex = "1.0"
 
 # JWT
 jsonwebtoken = "9.3"

@@ -7,7 +7,10 @@ mod database;
 mod jwt;
 mod middleware;
 mod models;
+mod rate_limiter;
+mod repositories;
 mod routes;
+mod validation;
 
 use axum::Router;
 use sqlx::PgPool;
@@ -21,6 +24,8 @@ pub struct AppState {
     pub db_pool: PgPool,
     pub redis_pool: RedisPool,
     pub jwt_service: JwtService,
+    pub user_repository: crate::repositories::UserRepository,
+    pub rate_limiter: crate::rate_limiter::RateLimiter,
 }
 
 #[tokio::main]
@@ -55,10 +60,16 @@ async fn main() -> Result<()> {
     let redis_config = cache::RedisConfig::from_env()?;
     let redis_pool = cache::RedisPool::new(&redis_config).await?;
 
+    let user_repository = crate::repositories::UserRepository::new(pool.clone());
+    let rate_limiter =
+        crate::rate_limiter::RateLimiter::new(crate::rate_limiter::RateLimiterConfig::default());
+
     let app_state = AppState {
         db_pool: pool,
         redis_pool,
         jwt_service,
+        user_repository,
+        rate_limiter,
     };
 
     // Start the web server

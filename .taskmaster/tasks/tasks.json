@@ -76,7 +76,7 @@
         "dependencies": [
           1
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -95,7 +95,7 @@
               "2.1"
             ],
             "details": "Implement JWT service using jsonwebtoken crate with RS256 algorithm. Create functions for generating access tokens (15min expiry) and refresh tokens (7 days expiry). Include user ID, roles, and permissions in JWT claims. Implement token validation middleware for protected routes. Add token blacklisting mechanism using Redis for logout functionality. Create refresh token rotation for enhanced security.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for token generation with various payloads, token validation with expired/invalid tokens, and refresh token rotation scenarios."
           },
           {
@@ -107,7 +107,7 @@
               "2.2"
             ],
             "details": "Implement POST /auth/register endpoint with password hashing using argon2. Create POST /auth/login endpoint that validates credentials, generates JWT tokens, and stores session in Redis. Implement DELETE /auth/logout endpoint that invalidates tokens and removes Redis session. Add input validation using serde and custom validators. Implement rate limiting for login attempts to prevent brute force attacks.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Integration tests for registration with various input scenarios, login with valid/invalid credentials, and logout token invalidation. Load testing for rate limiting effectiveness."
           },
           {
@@ -249,7 +249,7 @@
     ],
     "metadata": {
       "created": "2025-07-31T14:03:14.798Z",
-      "updated": "2025-08-01T09:53:59.021Z",
+      "updated": "2025-08-01T11:00:04.088Z",
       "description": "Tasks for master context"
     }
   }

@@ -18,3 +18,6 @@
 10. In rust, I prefer the builder pattern.
 11. I prefer rust tests in a separate folder close to src, called `tests`.
 12. Sometimes, you'll want to use pwd to know where you are, relatively to the root of the project.
+13. Sometimes when I do changes to the github workflow files, I wanna test the file using nektos/act.
+14. When a rust is meant to be ran inside of a server,  prefer deploying it using docker and optimize the build for prod.
+15. Somtimes I use the fetch tool to fetch links. Sometimes I use the brave tools to browse the web to check for new data about my task before I start working on it.

@@ -3,7 +3,7 @@
 use anyhow::Result;
 use axum::{
     Json, Router,
-    extract::State,
+    extract::{ConnectInfo, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -11,7 +11,14 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::{AppState, jwt::Claims, models::User};
+use crate::{
+    AppState,
+    jwt::Claims,
+    models::{LoginCredentials, NewUser, User},
+    rate_limiter::RateLimiter,
+    repositories::UserRepository,
+    validation,
+};
 
 /// Response for token generation
 #[derive(Serialize)]
@@ -36,10 +43,18 @@ pub struct RefreshTokenResponse {
     pub expires_in: u64,
 }
 
+/// Request for user registration
+#[derive(Deserialize)]
+pub struct RegisterRequest {
+    pub username: String,
+    pub email: String,
+    pub password: String,
+}
+
 /// Request for user login
 #[derive(Deserialize)]
 pub struct LoginRequest {
-    pub username: String,
+    pub username_or_email: String,
     pub password: String,
 }
 
@@ -54,6 +69,7 @@ pub struct LoginResponse {
 pub fn create_router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health_check))
+        .route("/auth/register", post(register))
         .route("/auth/login", post(login))
         .route("/auth/refresh", post(refresh_token))
         .route("/auth/logout", post(logout))
@@ -68,30 +84,105 @@ pub async fn health_check() -> impl IntoResponse {
     }))
 }
 
+/// User registration endpoint
+pub async fn register(
+    State(state): State<AppState>,
+    Json(payload): Json<RegisterRequest>,
+) -> Result<impl IntoResponse, AuthError> {
+    info!("Registration attempt for user: {}", payload.username);
+
+    // Validate input
+    validation::validate_username(&payload.username).map_err(|e| AuthError::BadRequest(e))?;
+    validation::validate_email(&payload.email).map_err(|e| AuthError::BadRequest(e))?;
+    validation::validate_password(&payload.password).map_err(|e| AuthError::BadRequest(e))?;
+
+    // Check if user already exists
+    if let Some(_) = state
+        .user_repository
+        .find_by_username_or_email(&payload.username)
+        .await
+        .map_err(|e| {
+            error!("Failed to check existing user by username: {}", e);
+            AuthError::InternalServerError
+        })?
+    {
+        return Err(AuthError::BadRequest("Username already exists".to_string()));
+    }
+
+    if let Some(_) = state
+        .user_repository
+        .find_by_username_or_email(&payload.email)
+        .await
+        .map_err(|e| {
+            error!("Failed to check existing user by email: {}", e);
+            AuthError::InternalServerError
+        })?
+    {
+        return Err(AuthError::BadRequest("Email already exists".to_string()));
+    }
+
+    // Create new user
+    let new_user = NewUser {
+        username: payload.username,
+        email: payload.email,
+        password_hash: payload.password,
+    };
+
+    let user = state.user_repository.create(&new_user).await.map_err(|e| {
+        error!("Failed to create user: {}", e);
+        AuthError::InternalServerError
+    })?;
+
+    let response = serde_json::json!({
+        "user_id": user.id.to_string(),
+        "message": "User registered successfully"
+    });
+
+    Ok((StatusCode::CREATED, Json(response)))
+}
+
 /// User login endpoint
 pub async fn login(
     State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<impl IntoResponse, AuthError> {
-    info!("Login attempt for user: {}", payload.username);
+    info!("Login attempt for user: {}", payload.username_or_email);
 
-    // TODO: Implement actual user authentication
-    // This is just a placeholder implementation
+    // Validate input
+    if payload.username_or_email.is_empty() {
+        return Err(AuthError::BadRequest(
+            "Username or email is required".to_string(),
+        ));
+    }
 
-    // In a real implementation, we would:
-    // 1. Validate the username and password against the database
-    // 2. If valid, generate JWT tokens
-    // 3. Store session in Redis
+    if payload.password.is_empty() {
+        return Err(AuthError::BadRequest("Password is required".to_string()));
+    }
 
-    // For now, we'll create a mock user
-    let user = User {
-        id: uuid::Uuid::new_v4(),
-        username: payload.username.clone(),
-        email: format!("{}@example.com", payload.username),
-        password_hash: "mock_hash".to_string(),
-        created_at: chrono::Utc::now(),
-        updated_at: chrono::Utc::now(),
-    };
+    // Find user by username or email
+    let user = state
+        .user_repository
+        .find_by_username_or_email(&payload.username_or_email)
+        .await
+        .map_err(|e| {
+            error!("Failed to find user: {}", e);
+            AuthError::InternalServerError
+        })?
+        .ok_or(AuthError::Unauthorized)?;
+
+    // Verify password
+    let is_valid = state
+        .user_repository
+        .verify_password(&user, &payload.password)
+        .await
+        .map_err(|e| {
+            error!("Failed to verify password: {}", e);
+            AuthError::InternalServerError
+        })?;
+
+    if !is_valid {
+        return Err(AuthError::Unauthorized);
+    }
 
     // Generate tokens
     let access_token = state
@@ -276,16 +367,19 @@ pub async fn logout(
 #[derive(Debug)]
 pub enum AuthError {
     Unauthorized,
+    BadRequest(String),
     InternalServerError,
 }
 
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
-            AuthError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized"),
-            AuthError::InternalServerError => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
-            }
+            AuthError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
+            AuthError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
+            AuthError::InternalServerError => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".to_string(),
+            ),
         };
 
         let body = Json(serde_json::json!({
