@@ -7,6 +7,7 @@ mod database;
 mod jwt;
 mod middleware;
 mod models;
+mod oauth;
 mod rate_limiter;
 mod repositories;
 mod routes;
@@ -26,6 +27,8 @@ pub struct AppState {
     pub jwt_service: JwtService,
     pub user_repository: crate::repositories::UserRepository,
     pub rate_limiter: crate::rate_limiter::RateLimiter,
+    pub google_oauth_client: Option<crate::oauth::OAuthClient>,
+    pub apple_oauth_client: Option<crate::oauth::OAuthClient>,
 }
 
 #[tokio::main]
@@ -64,12 +67,17 @@ async fn main() -> Result<()> {
     let rate_limiter =
         crate::rate_limiter::RateLimiter::new(crate::rate_limiter::RateLimiterConfig::default());
 
+    let google_oauth_client = None;
+    let apple_oauth_client = None;
+
     let app_state = AppState {
         db_pool: pool,
         redis_pool,
         jwt_service,
         user_repository,
         rate_limiter,
+        google_oauth_client,
+        apple_oauth_client,
     };
 
     // Start the web server
