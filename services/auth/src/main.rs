@@ -11,6 +11,7 @@ mod oauth;
 mod rate_limiter;
 mod repositories;
 mod routes;
+mod session;
 mod validation;
 
 use axum::Router;
@@ -27,6 +28,7 @@ pub struct AppState {
     pub jwt_service: JwtService,
     pub user_repository: crate::repositories::UserRepository,
     pub rate_limiter: crate::rate_limiter::RateLimiter,
+    pub session_manager: crate::session::SessionManager,
     pub google_oauth_client: Option<crate::oauth::OAuthClient>,
     pub apple_oauth_client: Option<crate::oauth::OAuthClient>,
 }
@@ -67,6 +69,8 @@ async fn main() -> Result<()> {
     let rate_limiter =
         crate::rate_limiter::RateLimiter::new(crate::rate_limiter::RateLimiterConfig::default());
 
+    let session_manager =
+        crate::session::SessionManager::new(redis_pool.clone(), jwt_service.clone());
     let google_oauth_client = None;
     let apple_oauth_client = None;
 
@@ -76,6 +80,7 @@ async fn main() -> Result<()> {
         jwt_service,
         user_repository,
         rate_limiter,
+        session_manager,
         google_oauth_client,
         apple_oauth_client,
     };

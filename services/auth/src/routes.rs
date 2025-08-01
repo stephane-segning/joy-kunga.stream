@@ -60,6 +60,18 @@ pub struct LoginRequest {
     pub password: String,
 }
 
+/// Request for logout
+#[derive(Deserialize)]
+pub struct LogoutRequest {
+    pub refresh_token: String,
+}
+
+/// Request for logout from all devices
+#[derive(Deserialize)]
+pub struct LogoutAllRequest {
+    pub refresh_token: String,
+}
+
 /// Request for OAuth authorization
 #[derive(Deserialize)]
 pub struct OAuthAuthRequest {
@@ -92,6 +104,8 @@ pub fn create_router(state: AppState) -> Router {
         .route("/auth/oauth/callback", post(oauth_callback))
         .route("/auth/refresh", post(refresh_token))
         .route("/auth/logout", post(logout))
+        .route("/auth/logout-all", post(logout_all))
+        .route("/health/redis", get(redis_health_check))
         .with_state(state)
 }
 
@@ -101,6 +115,31 @@ pub async fn health_check() -> impl IntoResponse {
         "status": "ok",
         "service": "auth-service"
     }))
+}
+
+/// Redis health check endpoint
+pub async fn redis_health_check(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AuthError> {
+    let is_healthy = state.session_manager.health_check().await.map_err(|e| {
+        error!("Redis health check failed: {}", e);
+        AuthError::InternalServerError
+    })?;
+
+    let status = if is_healthy { "ok" } else { "error" };
+
+    let response = serde_json::json!({
+        "status": status,
+        "service": "redis"
+    });
+
+    let status_code = if is_healthy {
+        StatusCode::OK
+    } else {
+        StatusCode::SERVICE_UNAVAILABLE
+    };
+
+    Ok((status_code, Json(response)))
 }
 
 /// User registration endpoint
@@ -220,19 +259,13 @@ pub async fn login(
             AuthError::InternalServerError
         })?;
 
-    // Store session in Redis
-    // In a real implementation, we would store more session data
-    let session_key = format!("session:{}", user.id);
+    // Store session using session manager
     state
-        .redis_pool
-        .set(
-            &session_key,
-            &refresh_token,
-            Some(state.jwt_service.refresh_token_expiry()),
-        )
+        .session_manager
+        .create_session(user.id, &refresh_token)
         .await
         .map_err(|e| {
-            error!("Failed to store session in Redis: {}", e);
+            error!("Failed to create session: {}", e);
             AuthError::InternalServerError
         })?;
 
@@ -278,16 +311,19 @@ pub async fn refresh_token(
         return Err(AuthError::Unauthorized);
     }
 
-    // Create a mock user for demonstration
-    // In a real implementation, we would fetch the user from the database
-    let user = User {
-        id: claims.sub,
-        username: "mock_user".to_string(),
-        email: "mock@example.com".to_string(),
-        password_hash: "mock_hash".to_string(),
-        created_at: chrono::Utc::now(),
-        updated_at: chrono::Utc::now(),
-    };
+    // Fetch the actual user from the database
+    let user = state
+        .user_repository
+        .find_by_id(claims.sub)
+        .await
+        .map_err(|e| {
+            error!("Failed to fetch user from database: {}", e);
+            AuthError::InternalServerError
+        })?
+        .ok_or_else(|| {
+            error!("User not found in database");
+            AuthError::Unauthorized
+        })?;
 
     // Generate a new access token
     let access_token = state
@@ -314,18 +350,13 @@ pub async fn refresh_token(
         expires_in: state.jwt_service.access_token_expiry(),
     };
 
-    // Update session in Redis
-    let session_key = format!("session:{}", user.id);
+    // Update session using session manager
     state
-        .redis_pool
-        .set(
-            &session_key,
-            &new_refresh_token,
-            Some(state.jwt_service.refresh_token_expiry()),
-        )
+        .session_manager
+        .update_session(user.id, &new_refresh_token)
         .await
         .map_err(|e| {
-            error!("Failed to update session in Redis: {}", e);
+            error!("Failed to update session: {}", e);
             AuthError::InternalServerError
         })?;
 
@@ -369,16 +400,72 @@ pub async fn logout(
             AuthError::InternalServerError
         })?;
 
-    // Remove session from Redis
-    let session_key = format!("session:{}", claims.sub);
-    state.redis_pool.delete(&session_key).await.map_err(|e| {
-        error!("Failed to remove session from Redis: {}", e);
-        AuthError::InternalServerError
-    })?;
+    // Remove session using session manager
+    state
+        .session_manager
+        .delete_session(claims.sub)
+        .await
+        .map_err(|e| {
+            error!("Failed to delete session: {}", e);
+            AuthError::InternalServerError
+        })?;
 
     Ok((
         StatusCode::OK,
         Json(serde_json::json!({"message": "Logged out successfully"})),
+    ))
+}
+
+/// Logout from all devices endpoint
+pub async fn logout_all(
+    State(state): State<AppState>,
+    Json(payload): Json<LogoutAllRequest>,
+) -> Result<impl IntoResponse, AuthError> {
+    info!("Logout from all devices request");
+
+    // Validate the refresh token
+    let claims = state
+        .jwt_service
+        .validate_token(&payload.refresh_token)
+        .map_err(|_| AuthError::Unauthorized)?;
+
+    // Check that it's actually a refresh token
+    if claims.token_type != crate::jwt::TokenType::Refresh {
+        return Err(AuthError::Unauthorized);
+    }
+
+    // Blacklist the refresh token
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| {
+            error!("Failed to get current time: {}", e);
+            AuthError::InternalServerError
+        })?
+        .as_secs();
+
+    let expiry = claims.exp.saturating_sub(now);
+    state
+        .jwt_service
+        .blacklist_token(&state.redis_pool, &payload.refresh_token, expiry)
+        .await
+        .map_err(|e| {
+            error!("Failed to blacklist token: {}", e);
+            AuthError::InternalServerError
+        })?;
+
+    // Remove all sessions for the user using session manager
+    state
+        .session_manager
+        .delete_all_sessions(claims.sub)
+        .await
+        .map_err(|e| {
+            error!("Failed to delete all sessions: {}", e);
+            AuthError::InternalServerError
+        })?;
+
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({"message": "Logged out from all devices successfully"})),
     ))
 }
 
