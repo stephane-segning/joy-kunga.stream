@@ -215,8 +215,62 @@
           2,
           3
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Axum Server and Core Application Structure",
+            "description": "Set up the basic Rust web server using the axum framework. Define the core application state, including the database connection pool, and establish a centralized error handling strategy for consistent JSON error responses.",
+            "dependencies": [],
+            "details": "Initialize a new axum project. Configure the main application router and define a shared `AppState` struct to hold the PostgreSQL connection pool (from Task 1). Implement a custom `AppError` type that can be converted into a structured JSON `axum::response::IntoResponse` for handling all API errors gracefully.",
+            "status": "done",
+            "testStrategy": "Unit test the error handling module to ensure various error kinds are correctly serialized into the specified JSON error format. Create a basic health check endpoint to verify server startup and state initialization."
+          },
+          {
+            "id": 2,
+            "title": "Implement User and Session Management Endpoints",
+            "description": "Create the API endpoints for user creation (POST /users) and session management (GET /sessions, DELETE /sessions). Define request and response data structures using serde for validation and serialization.",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Implement the handler for `POST /users` to allow new user registration. Implement handlers for `GET /sessions` and `DELETE /sessions`. Use `serde` to define structs like `CreateUserRequest`, `UserResponse`, and `SessionResponse`. Initially, these routes may not be protected.",
+            "status": "done",
+            "testStrategy": "Write unit tests for each handler, mocking database interactions. Create integration tests to validate the full request/response cycle, including payload validation and correct HTTP status codes."
+          },
+          {
+            "id": 3,
+            "title": "Implement JWT Authentication Middleware",
+            "description": "Develop middleware for axum to protect routes by validating JSON Web Tokens (JWTs). The middleware will parse the 'Authorization' header, verify the token, and make user claims available to protected handlers.",
+            "dependencies": [
+              "4.2"
+            ],
+            "details": "Create an `axum::middleware` function that extracts the bearer token. Use the `jsonwebtoken` crate to decode and validate the token signature and claims, integrating with the logic from Task 2. If valid, store user information (e.g., user ID) in request extensions. If invalid, return a `401 Unauthorized` error. Apply this middleware to the session and user endpoints.",
+            "status": "done",
+            "testStrategy": "Unit test the middleware with valid, invalid, expired, and malformed tokens. Perform integration testing to confirm that protected routes correctly reject unauthenticated requests and grant access to authenticated ones."
+          },
+          {
+            "id": 4,
+            "title": "Build Media Read Endpoints with Advanced Querying",
+            "description": "Implement the `GET /media` and `GET /media/:id` endpoints. The `/media` list endpoint must support pagination, sorting, and filtering capabilities via query parameters.",
+            "dependencies": [
+              "4.3"
+            ],
+            "details": "Create a handler for `GET /media/:id` to fetch a single media item by its ID. For `GET /media`, parse query parameters for pagination (e.g., `page`, `limit`), sorting (e.g., `sort_by=name&order=asc`), and filtering. Construct a dynamic SQL query using `sqlx` to efficiently fetch the requested data slice. Protect both routes with the JWT middleware.",
+            "status": "done",
+            "testStrategy": "Unit test the query-building logic to ensure it correctly handles various combinations of filters and sorting parameters. Write integration tests against a seeded database to verify pagination logic, sorting order, and filtering accuracy."
+          },
+          {
+            "id": 5,
+            "title": "Implement Media Action Endpoint",
+            "description": "Create the `POST /media/refresh` endpoint to trigger a background process for updating the media library or specific metadata. This endpoint must be protected and handle requests asynchronously.",
+            "dependencies": [
+              "4.3"
+            ],
+            "details": "Implement the handler for the `POST /media/refresh` route, ensuring it is protected by the JWT authentication middleware. The handler should validate the incoming request and then trigger a media library scan or metadata refresh. Initially, this can be a synchronous operation, with plans to move to a background job queue.",
+            "status": "done",
+            "testStrategy": "Write an integration test to ensure the endpoint is properly secured and returns an appropriate success response (e.g., `202 Accepted`) upon receiving a valid request from an authenticated user. Unit test the handler to verify it correctly calls the underlying media refresh service logic."
+          }
+        ]
       },
       {
         "id": 5,
@@ -304,7 +358,7 @@
     ],
     "metadata": {
       "created": "2025-07-31T14:03:14.798Z",
-      "updated": "2025-08-01T13:19:33.835Z",
+      "updated": "2025-08-01T14:31:30.477Z",
       "description": "Tasks for master context"
     }
   }

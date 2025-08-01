@@ -11,7 +11,7 @@
     - and start working on it
 6. If you're done with one (sub)task, then terminate.
 7. Always use conventional commit when doing commit. Only add a longer body if the case looks interesting. You judge.
-8. If a task you want to work on has no subtasks, create subtasks first using taskmaster ai.
+8. If a task you want to work on has no subtasks, create 15 subtasks first using taskmaster ai.
 9. if you create substacks, create them on github too via the tool following this pattern:
     - the task is the user story, is prefixed with `[US]` and is labelled as user-story
     - the sub task is the ticket and is labelled as ticket
@@ -22,3 +22,5 @@
 14. When a rust is meant to be ran inside of a server,  prefer deploying it using docker and optimize the build for prod.
 15. Somtimes I use the fetch tool to fetch links. Sometimes I use the brave tools to browse the web to check for new data about my task before I start working on it.
 16. In rust, I always keep the version in the workspace, never in a specific project.
+17. Save all relevant informations you discovered in the memory for future use using tool.
+18. I prefer using clap when I have a polyvalent app (e.g serve, validate env, migrate,...).

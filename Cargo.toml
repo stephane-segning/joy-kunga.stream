@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["libs/common", "services/auth", "services/media"]
+members = ["libs/common", "services/auth", "services/media", "services/api"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,6 +13,7 @@ repository = "https://github.com/stephane-segning/joy-kunga.stream"
 common = { path = "libs/common" }
 auth = { path = "services/auth" }
 media = { path = "services/media" }
+api = { path = "services/api" }
 
 # Web framework
 axum = "0.7"

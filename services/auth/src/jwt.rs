@@ -30,16 +30,47 @@ impl JwtConfig {
     /// Create a new JwtConfig from environment variables
     ///
     /// # Environment Variables
-    /// - `JWT_PRIVATE_KEY`: Private key for signing tokens (PEM format)
-    /// - `JWT_PUBLIC_KEY`: Public key for verifying tokens (PEM format)
+    /// - `JWT_PRIVATE_KEY`: Private key for signing tokens (PEM format) or path to private key file
+    /// - `JWT_PUBLIC_KEY`: Public key for verifying tokens (PEM format) or path to public key file
     /// - `JWT_ACCESS_TOKEN_EXPIRY`: Access token expiry in seconds (default: 900)
     /// - `JWT_REFRESH_TOKEN_EXPIRY`: Refresh token expiry in seconds (default: 604800)
     pub fn from_env() -> Result<Self> {
         let private_key = std::env::var("JWT_PRIVATE_KEY")
             .map_err(|_| anyhow::anyhow!("JWT_PRIVATE_KEY environment variable not set"))?;
 
+        // If the private key looks like a file path, read from file (try CWD, then project root)
+        let private_key = if private_key.starts_with("-----BEGIN") {
+            private_key
+        } else {
+            std::fs::read_to_string(&private_key)
+                .or_else(|_| {
+                    // Try resolving relative to project root
+                    let mut path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                    path.push(&private_key);
+                    std::fs::read_to_string(path)
+                })
+                .map_err(|e| anyhow::anyhow!("Failed to read private key file: {}", e))?
+                .trim()
+                .to_string()
+        };
+
         let public_key = std::env::var("JWT_PUBLIC_KEY")
             .map_err(|_| anyhow::anyhow!("JWT_PUBLIC_KEY environment variable not set"))?;
+
+        // If the public key looks like a file path, read from file (try CWD, then project root)
+        let public_key = if public_key.starts_with("-----BEGIN") {
+            public_key
+        } else {
+            std::fs::read_to_string(&public_key)
+                .or_else(|_| {
+                    let mut path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                    path.push(&public_key);
+                    std::fs::read_to_string(path)
+                })
+                .map_err(|e| anyhow::anyhow!("Failed to read public key file: {}", e))?
+                .trim()
+                .to_string()
+        };
 
         let access_token_expiry = std::env::var("JWT_ACCESS_TOKEN_EXPIRY")
             .unwrap_or_else(|_| "900".to_string()) // 15 minutes
